@@ -7,10 +7,12 @@ WORKDIR /build
 # Copiar apenas arquivos de dependências primeiro para cachear o download
 COPY go.mod go.sum ./
 
-# Copiar whatsmeow-lib que é uma dependência local
-COPY whatsmeow-lib/ ./whatsmeow-lib/
+# Submódulo whatsmeow-lib: clones em CI/Easypanel costumam vir sem submodule inicializado.
+# Mesmo commit que o repositório aponta em .gitmodules (EvolutionAPI/whatsmeow).
+ARG WHATSMOW_SHA=e0f1a65cfa37e1cbf744d968fd1c5fbd3dc68eda
+RUN git clone https://github.com/EvolutionAPI/whatsmeow.git whatsmeow-lib && \
+	cd whatsmeow-lib && git checkout ${WHATSMOW_SHA}
 
-# Agora fazer download das dependências (com replace funcionando)
 RUN go mod download
 
 # Copiar o restante do código
@@ -27,7 +29,6 @@ WORKDIR /app
 
 COPY --from=build /build/server .
 COPY --from=build /build/manager/dist ./manager/dist
-COPY --from=build /build/VERSION ./VERSION
 
 ENV TZ=America/Sao_Paulo
 
